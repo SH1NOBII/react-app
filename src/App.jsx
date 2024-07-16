@@ -5,45 +5,54 @@ import LeftPanel from './layouts/LeftPanel/LeftPanel.jsx';
 import Body from './layouts/Body/Body.jsx';
 import Header from './components/Header/Header.jsx';
 import JournalForm from './components/JournalForm/JournalForm.jsx';
+import { useLocalStorage } from './hooks/use-localstorage.hook.js';
+import { UserContextProvider } from './context/user.context.jsx';
 import { useState } from 'react';
+
+
+function mapItems(items) {
+	if(!items) {
+		return [];
+	}
+	return items.map(i => ({
+		...i,
+		date: new Date(i.date)
+	}));
+}
 
 function App() {
 
-	const INITIAL_DATA = [
-		// {
-		// 	id: 1,
-		// 	title: 'Test',
-		// 	text: 'Hi',
-		// 	date: new Date()
-		// }
-	];
 	
-	const [items, setItems] = useState(INITIAL_DATA);
+	const [items, setItems] = useLocalStorage('data');
+	const [selectedItem, setSelectedItem] = useState({});
+
+
 	const addItem = (item) => {
-		setItems(oldItems => [...oldItems, {
-			text: item.text,
-			title: item.title,
+		setItems([...mapItems(items), {
+			...item,
 			date: new Date(item.date),
-			id: oldItems.length > 0 ? Math.max(...oldItems.map(i => i.id)) + 1 : 1
+			id: items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1
 		}]);
 	};
   
 	
 
 	return (
-		<div className='app'>
-			<LeftPanel>
-				<Header/>
-				<JournalAddButton>
+		<UserContextProvider >
+			<div className='app'>
+				<LeftPanel>
+					<Header/>
+					<JournalAddButton>
 					
-				</JournalAddButton>
-				<JournalList items={items}>
-				</JournalList>
-			</LeftPanel>
-			<Body>
-				<JournalForm onSubmit={addItem}/>
-			</Body>
-		</div>
+					</JournalAddButton>
+					<JournalList items={mapItems(items)} setItem={selectedItem}>
+					</JournalList>
+				</LeftPanel>
+				<Body>
+					<JournalForm onSubmit={addItem}/>
+				</Body>
+			</div>
+		</UserContextProvider>
 	);
 }
 

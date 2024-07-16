@@ -1,58 +1,103 @@
-import './JournalForm.css';
+import styles from './JournalForm.module.css';
 import Button from '../Button/Button';
-import { useState } from 'react';
+import { useContext, useEffect, useReducer, useRef } from 'react';
+import cn from 'classnames';
+import { INITIAL_STATE, formReducer } from './JournalForm.state';
+import { Input } from '../Input/Input';
+import { UserContext } from '../../context/user.context';
+
+
 
 
 function JournalForm ( {onSubmit} ) {
-	const [formValidState, setFormValidState] = useState({
-		title: true,
-		text: true,
-		date: true
-	});
+	
+	const [formState, dispatchForm] = useReducer(formReducer, INITIAL_STATE);
+	const { isValid, isFormReadyToSubmit, values } = formState;
+	const titleRef = useRef();
+	const dateRef = useRef();
+	const textRef = useRef();
+	const { userId } = useContext(UserContext);
+
+	const focusError = (isValid) => {
+		switch(true) {
+		case !isValid.title:
+			titleRef.current.focus();
+			break;
+		
+		case !isValid.date:
+			dateRef.current.focus();
+			break;
+		
+		case !isValid.text:
+			textRef.current.focus();
+			break;
+		}
+	};
+	
+	
+	useEffect(() => {
+		let timerId;
+		if(!isValid.text || !isValid.date || !isValid.title) {
+			focusError(isValid);
+			timerId = setTimeout(() => {
+				dispatchForm({type: 'RESET_VALIDITY' });
+			}, 2000);
+		}
+		return () => {
+			clearTimeout(timerId);
+		};
+	}, [isValid]);
+
+	useEffect(() => {
+		if(isFormReadyToSubmit) {
+			onSubmit(values);
+			dispatchForm({type: 'CLEAR' });
+		}
+	}, [isFormReadyToSubmit, values, onSubmit]);
 
 
 	const addJournalItem = (e) => {
 		e.preventDefault();
-		const formData = new FormData(e.target);
-		const formProps = Object.fromEntries(formData);
-		let isFormValid = true;
-		if (!formProps.title?.trim().length) {
-			setFormValidState(state => ({...state, title: false}));
-			isFormValid = false;
-		} else {
-			setFormValidState(state => ({...state, title: true}));
-		}
-		
-		if (!formProps.text?.trim().length) {
-			setFormValidState(state => ({...state, text: false}));
-			isFormValid = false;
-
-		} else {
-			setFormValidState(state => ({...state, text: true}));
-		}
-		if (!formProps.date) {
-			setFormValidState(state => ({...state, date: false}));
-			isFormValid = false;
-		} else {
-			setFormValidState(state => ({...state, date: true}));
-		}
-
-		if (!isFormValid) {
-			return;
-		}
+		dispatchForm({type: 'SUBMIT'});
 	};
 
+	useEffect(() => {
+		dispatchForm({type: 'SET_VALUE', payload: {userId}});
+	}, [userId]);
+
+	const onChange = (e) => {
+		dispatchForm({type: 'SET_VALUE', payload: {[e.target.name]: e.target.value}});
+	};
 
 	return (
-		<>
-			<form className='journal-form' onSubmit={addJournalItem}>
-				<input type="title" name='title' className={`input ${formValidState.title ? '' : 'invalid'}`}/>
-				<input type="date" name='date' className={`input ${formValidState.date ? '' : 'invalid'}`}/>
-				<input type="text" name='tag' />
-				<textarea name="text" id="" className={`input ${formValidState.text ? '' : 'invalid'}`}></textarea>
-				<Button text="Save"></Button>
-			</form>
-		</>
+		
+		<form className={styles['journal-form']} onSubmit={addJournalItem}>
+			<div>
+				<Input type="title"  ref={titleRef} isValid={isValid.title} onChange={onChange} value={values.title} name='title' appearence='title'/>
+			</div>
+				
+			<div className={styles['form-row']}>
+				<label htmlFor="date" className={styles['form-label']}>
+					<img src="/calendar.svg" alt="calendar icon" />
+					<span>Date</span>
+				</label>
+				<Input type="date" ref={dateRef} isValid={isValid.date} onChange={onChange} value={values.date} name='date' id='date' /> 
+			</div>	
+
+			<div className={styles['form-row']}>
+				<label htmlFor="tag" className={styles['form-label']}>
+					<img src="/folder.svg" alt="folder icon" />
+					<span>Tags</span>
+				</label>
+				<Input type="text"  onChange={onChange} value={values.tag} name='tag' id='tag' />
+			</div>
+				
+			<textarea name="text" ref={textRef} onChange={onChange} value={values.text} id="" className={cn(styles['input'], {
+				[styles['invalid']]: !isValid.text,
+			})}></textarea>
+			<Button>Save</Button>
+		</form>
+			
 	);
 }
 
