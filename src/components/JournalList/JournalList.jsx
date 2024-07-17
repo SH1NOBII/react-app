@@ -29,7 +29,7 @@ function JournalList({items, setItem}) {
 	return <>
 		{filteredItems
 			.map(el => (
-				<CardButton	key={el.id} onClick={setItem}>
+				<CardButton	key={el.id} onClick={() => setItem(el)}>
 					<JournalItem 
 						title={el.title} 
 						text={el.text} 

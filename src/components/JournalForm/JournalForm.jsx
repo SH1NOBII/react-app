@@ -9,7 +9,7 @@ import { UserContext } from '../../context/user.context';
 
 
 
-function JournalForm ( {onSubmit} ) {
+function JournalForm ( { onSubmit, data } ) {
 	
 	const [formState, dispatchForm] = useReducer(formReducer, INITIAL_STATE);
 	const { isValid, isFormReadyToSubmit, values } = formState;
@@ -33,6 +33,10 @@ function JournalForm ( {onSubmit} ) {
 			break;
 		}
 	};
+
+	useEffect(() => {	
+		dispatchForm({type: 'SET_VALUE', payload: {...data}});
+	}, [data]);
 	
 	
 	useEffect(() => {
@@ -52,8 +56,9 @@ function JournalForm ( {onSubmit} ) {
 		if(isFormReadyToSubmit) {
 			onSubmit(values);
 			dispatchForm({type: 'CLEAR' });
+			dispatchForm({type: 'SET_VALUE', payload: {userId}});
 		}
-	}, [isFormReadyToSubmit, values, onSubmit]);
+	}, [isFormReadyToSubmit, values, onSubmit, userId]);
 
 
 	const addJournalItem = (e) => {
@@ -81,7 +86,7 @@ function JournalForm ( {onSubmit} ) {
 					<img src="/calendar.svg" alt="calendar icon" />
 					<span>Date</span>
 				</label>
-				<Input type="date" ref={dateRef} isValid={isValid.date} onChange={onChange} value={values.date} name='date' id='date' /> 
+				<Input type="date" ref={dateRef} isValid={isValid.date} onChange={onChange} value={values.date ? new Date(values.date).toISOString().slice(0, 10) : ''} name='date' id='date' /> 
 			</div>	
 
 			<div className={styles['form-row']}>
